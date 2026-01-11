@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "3rdeyefeel",
     "public": "build",
     "ignore": [
       "firebase.json",
