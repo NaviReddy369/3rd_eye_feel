@@ -197,18 +197,26 @@ const ServiceForm: React.FC = () => {
 
   if (showSuccess) {
     return (
-      <div className="min-h-screen bg-tech-dark flex items-center justify-center px-4">
-        <div className="glass rounded-lg p-8 md:p-12 max-w-md w-full text-center animate-scaleIn border border-tech-border">
-          <div className="text-6xl mb-4">✅</div>
-          <h2 className="text-3xl font-bold text-tech-text mb-4">Success!</h2>
-          <p className="text-tech-text-muted mb-6">
+      <div className="min-h-screen bg-tech-dark flex items-center justify-center px-4 sm:px-6 py-6 sm:py-8">
+        <div className="glass rounded-lg p-6 sm:p-8 md:p-12 max-w-md w-full text-center animate-scaleIn border border-tech-border">
+          <div className="text-5xl sm:text-6xl mb-4">✅</div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-tech-text mb-4">Success!</h2>
+          <p className="text-sm sm:text-base text-tech-text-muted mb-6 leading-relaxed px-2">
             Your request for <span className="font-semibold text-tech-cyan">{service.name}</span> has been submitted. Our team will reach out to you within 24 hours.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button onClick={() => setShowSuccess(false)} variant="secondary">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <Button 
+              onClick={() => setShowSuccess(false)} 
+              variant="secondary"
+              className="w-full sm:w-auto min-h-[44px] touch-manipulation"
+            >
               Submit Another
             </Button>
-            <Button onClick={() => navigate('/')} variant="outline">
+            <Button 
+              onClick={() => navigate('/')} 
+              variant="outline"
+              className="w-full sm:w-auto min-h-[44px] touch-manipulation"
+            >
               Back to Home
             </Button>
           </div>
@@ -218,33 +226,34 @@ const ServiceForm: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-tech-dark py-12 px-4">
+    <div className="min-h-screen bg-tech-dark py-6 sm:py-8 md:py-12 px-4 sm:px-6">
       <div className="container mx-auto max-w-2xl">
-        <div className="glass rounded-lg p-6 md:p-8 animate-fadeIn border border-tech-border">
-          <div className="mb-8">
+        <div className="glass rounded-lg p-4 sm:p-6 md:p-8 animate-fadeIn border border-tech-border">
+          <div className="mb-6 sm:mb-8">
             <button
               onClick={() => navigate('/')}
-              className="text-tech-text-muted hover:text-tech-cyan mb-4 flex items-center gap-2 transition-colors"
+              className="text-tech-text-muted hover:text-tech-cyan mb-4 flex items-center gap-2 transition-colors text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-tech-cyan/50 rounded-lg px-2 py-1 -ml-2"
+              aria-label="Navigate back to home"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back to Home
             </button>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-4xl">{service.icon}</span>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-tech-text mb-2">
+            <div className="flex items-center gap-3 sm:gap-4 mb-4">
+              <span className="text-3xl sm:text-4xl">{service.icon}</span>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-tech-text mb-2">
                   Request: {service.name}
                 </h1>
-                <p className="text-tech-text-muted">
+                <p className="text-sm sm:text-base text-tech-text-muted leading-relaxed">
                   Fill out the form below and our team will get back to you soon.
                 </p>
               </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
             <FormField
               label="Full Name"
               name="name"
@@ -344,7 +353,7 @@ const ServiceForm: React.FC = () => {
               variant="primary"
               size="lg"
               isLoading={isSubmitting}
-              className="w-full"
+              className="w-full min-h-[48px] sm:min-h-[52px] touch-manipulation"
             >
               Submit Request
             </Button>
