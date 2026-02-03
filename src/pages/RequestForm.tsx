@@ -26,6 +26,7 @@ const RequestForm: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
   const serviceOptions = SERVICES.map(service => ({
     value: service.id,
@@ -97,8 +98,9 @@ const RequestForm: React.FC = () => {
     setIsSubmitting(true);
     try {
       await submitRequest(formData);
+      setSubmittedEmail(formData.email);
       setShowSuccess(true);
-      setToastMessage('Your request has been submitted successfully! We will contact you soon.');
+      setToastMessage('Your request has been submitted successfully! A welcome email has been sent to your inbox. We will contact you soon.');
       setToastType('success');
       setShowToast(true);
       
@@ -114,6 +116,7 @@ const RequestForm: React.FC = () => {
           message: '',
         });
         setShowSuccess(false);
+        setSubmittedEmail('');
       }, 3000);
     } catch (error) {
       setToastMessage(error instanceof Error ? error.message : 'Failed to submit request. Please try again.');
@@ -135,7 +138,7 @@ const RequestForm: React.FC = () => {
           <div className="text-5xl sm:text-6xl mb-4">✅</div>
           <h2 className="text-2xl sm:text-3xl font-bold text-tech-text mb-4">Success!</h2>
           <p className="text-sm sm:text-base text-tech-text-muted mb-6 leading-relaxed px-2">
-            Your request has been submitted. Our team will reach out to you within 24 hours.
+            Your request has been submitted successfully! We've sent a welcome email to <span className="font-semibold text-tech-cyan">{submittedEmail}</span>. Our team will reach out to you within 24 hours.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Button 
