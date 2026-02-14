@@ -65,8 +65,30 @@ Ensure the extension is configured with:
 4. In a few seconds, `mail` document gets a `delivery` field (added by extension)
 5. Check your email inbox (and spam folder)
 
+## Email Branding and Logo
+
+The welcome email uses a branded template with your logo. To update:
+
+1. **Logo image:** Replace `public/logo.png` with your desired logo (e.g. the glowing eye logo)
+2. **Redeploy hosting:** `firebase deploy --only hosting` so the new logo is served
+3. **Brand config:** Edit `functions/src/emailConfig.ts` to change:
+   - `LOGO_URL` (if hosting elsewhere)
+   - `COMPANY_NAME`, `TAGLINE`
+   - `BRAND_COLORS` (primary, accent, etc.)
+4. **Redeploy functions:** `firebase deploy --only functions` after config changes
+
+## Sender Avatar (Inbox Profile Picture)
+
+The circular profile picture shown next to emails in Gmail/Outlook is controlled by the recipient's client. To set yours:
+
+1. Go to [gravatar.com](https://gravatar.com)
+2. Sign up with your sender email (e.g. `3rdeyefeel@gnkcontinuum.org`)
+3. Upload your logo or avatar
+4. Gmail and many clients will display it automatically
+
 ## Troubleshooting
 
 - **No mail document:** Cloud Function may have failed. Check Firebase Console → Functions → Logs
 - **mail document but no email:** Check extension SMTP config and extension logs
 - **delivery.error in mail doc:** SMTP/auth issue - verify Brevo credentials
+- **Logo not showing in email:** Ensure logo URL is HTTPS; check image loads at that URL in a browser

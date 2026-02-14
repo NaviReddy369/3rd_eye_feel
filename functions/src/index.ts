@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { EMAIL_CONFIG } from "./emailConfig";
 
 admin.initializeApp();
 
@@ -45,6 +46,7 @@ const TIMELINE_LABELS: Record<string, string> = {
 /**
  * When a document is created in "requests", create a corresponding
  * document in "mail" for the Trigger Email extension to send a welcome email.
+ * Uses branded template with logo, colors, and robust HTML for email clients.
  */
 export const sendWelcomeEmailOnRequest = functions.firestore
   .document("requests/{requestId}")
@@ -71,39 +73,25 @@ export const sendWelcomeEmailOnRequest = functions.firestore
       return;
     }
 
-    const html = `
-<h2>Hi ${escapeHtml(name)},</h2>
+    const { LOGO_URL, COMPANY_NAME, TAGLINE, BRAND_COLORS } = EMAIL_CONFIG;
 
-<p>Thank you for contacting <strong>3rd Eye Feel</strong>!</p>
-
-<p>We've received your request for <strong>${escapeHtml(serviceName)}</strong> and our team will review it shortly. We typically respond within 24 hours.</p>
-
-<h3>Request Summary:</h3>
-<ul>
-  <li><strong>Service:</strong> ${escapeHtml(serviceName)}</li>
-  <li><strong>Submitted:</strong> ${escapeHtml(createdAt)}</li>
-  <li><strong>Budget Range:</strong> ${escapeHtml(budget)}</li>
-  <li><strong>Timeline:</strong> ${escapeHtml(timeline)}</li>
-</ul>
-
-<h3>What happens next?</h3>
-<p>Our team will review your requirements and get back to you within 24 hours with next steps and a personalized proposal.</p>
-
-<p>If you have any questions, feel free to reach out to us.</p>
-
-<p>Best regards,<br>
-The 3rd Eye Feel Team</p>
-
-<hr>
-<p><small>3rd Eye Feel<br>
-Advanced AI Solutions & Production Services</small></p>
-`;
+    const html = buildWelcomeEmailHtml({
+      logoUrl: LOGO_URL,
+      companyName: COMPANY_NAME,
+      tagline: TAGLINE,
+      brandColors: BRAND_COLORS,
+      recipientName: name,
+      serviceName,
+      createdAt,
+      budget,
+      timeline,
+    });
 
     const mailDoc = {
       to: [email],
       message: {
-        subject: "Welcome to 3rd Eye Feel - Thank You for Your Request!",
-        text: `Hi ${name}, Thank you for contacting 3rd Eye Feel! We've received your request for ${serviceName} and our team will review it shortly. We typically respond within 24 hours. Request Summary: Service: ${serviceName}, Submitted: ${createdAt}, Budget: ${budget}, Timeline: ${timeline}. Our team will get back to you within 24 hours. Best regards, The 3rd Eye Feel Team`,
+        subject: `Welcome to ${EMAIL_CONFIG.COMPANY_NAME} - Thank You for Your Request!`,
+        text: `Hi ${name}, Thank you for contacting ${EMAIL_CONFIG.COMPANY_NAME}! We've received your request for ${serviceName} and our team will review it shortly. We typically respond within 24 hours. Request Summary: Service: ${serviceName}, Submitted: ${createdAt}, Budget: ${budget}, Timeline: ${timeline}. Our team will get back to you within 24 hours. Best regards, The ${EMAIL_CONFIG.COMPANY_NAME} Team`,
         html,
       },
     };
@@ -111,6 +99,85 @@ Advanced AI Solutions & Production Services</small></p>
     await admin.firestore().collection("mail").add(mailDoc);
     functions.logger.info(`Queued welcome email for ${email}`);
   });
+
+interface WelcomeEmailParams {
+  logoUrl: string;
+  companyName: string;
+  tagline: string;
+  brandColors: { primary: string; accent: string; darkBg: string; cardBg: string; text: string; textMuted: string };
+  recipientName: string;
+  serviceName: string;
+  createdAt: string;
+  budget: string;
+  timeline: string;
+}
+
+function buildWelcomeEmailHtml(params: WelcomeEmailParams): string {
+  const { logoUrl, companyName, tagline, brandColors, recipientName, serviceName, createdAt, budget, timeline } = params;
+  const c = brandColors;
+
+  return `
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Welcome to ${escapeHtml(companyName)}</title>
+</head>
+<body style="margin:0; padding:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:${c.darkBg};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${c.darkBg};">
+<tr><td align="center" style="padding:24px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%;" align="center">
+  <tr>
+    <td align="center" style="padding:40px 24px; background-color:${c.darkBg};">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center">
+        <tr><td align="center" style="padding-bottom:20px;">
+          <img src="${logoUrl}" alt="${escapeHtml(companyName)}" width="160" border="0" style="display:block; max-width:160px; width:160px; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; border:0;" />
+        </td></tr>
+        <tr><td align="center">
+          <h1 style="margin:0; font-size:28px; font-weight:700; color:${c.primary}; line-height:1.3;">${escapeHtml(companyName)}</h1>
+        </td></tr>
+        <tr><td align="center" style="padding-top:8px;">
+          <p style="margin:0; font-size:14px; color:${c.textMuted}; line-height:1.5;">${escapeHtml(tagline)}</p>
+        </td></tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:0 24px 32px 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${c.cardBg}; border:1px solid #333333;">
+        <tr><td style="padding:32px 24px;">
+          <h2 style="margin:0 0 20px 0; font-size:22px; font-weight:600; color:${c.text}; line-height:1.4;">Hi ${escapeHtml(recipientName)},</h2>
+          <p style="margin:0 0 16px 0; font-size:16px; line-height:1.6; color:${c.text};">Thank you for contacting <strong style="color:${c.primary};">${escapeHtml(companyName)}</strong>!</p>
+          <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6; color:${c.text};">We've received your request for <strong>${escapeHtml(serviceName)}</strong> and our team will review it shortly. We typically respond within 24 hours.</p>
+          <table role="presentation" width="100%" cellpadding="16" cellspacing="0" border="0" style="background-color:${c.darkBg}; margin-bottom:24px;">
+            <tr><td colspan="2" style="font-size:14px; font-weight:600; color:${c.primary}; padding-bottom:12px; border-bottom:1px solid #333333;">Request Summary</td></tr>
+            <tr><td width="40%" style="font-size:14px; color:${c.textMuted}; padding:10px 0; vertical-align:top;">Service</td><td style="font-size:14px; color:${c.text}; padding:10px 0; vertical-align:top;">${escapeHtml(serviceName)}</td></tr>
+            <tr><td style="font-size:14px; color:${c.textMuted}; padding:10px 0; vertical-align:top;">Submitted</td><td style="font-size:14px; color:${c.text}; padding:10px 0; vertical-align:top;">${escapeHtml(createdAt)}</td></tr>
+            <tr><td style="font-size:14px; color:${c.textMuted}; padding:10px 0; vertical-align:top;">Budget Range</td><td style="font-size:14px; color:${c.text}; padding:10px 0; vertical-align:top;">${escapeHtml(budget)}</td></tr>
+            <tr><td style="font-size:14px; color:${c.textMuted}; padding:10px 0; vertical-align:top;">Timeline</td><td style="font-size:14px; color:${c.text}; padding:10px 0; vertical-align:top;">${escapeHtml(timeline)}</td></tr>
+          </table>
+          <h3 style="margin:0 0 12px 0; font-size:16px; font-weight:600; color:${c.text};">What happens next?</h3>
+          <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6; color:${c.text};">Our team will review your requirements and get back to you within 24 hours with next steps and a personalized proposal.</p>
+          <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6; color:${c.text};">If you have any questions, feel free to reach out to us.</p>
+          <p style="margin:0; font-size:16px; line-height:1.6; color:${c.text};">Best regards,<br/><strong style="color:${c.accent};">The ${escapeHtml(companyName)} Team</strong></p>
+        </td></tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="padding:24px; background-color:${c.darkBg}; border-top:1px solid #333333;">
+      <p style="margin:0; font-size:12px; color:${c.textMuted}; line-height:1.5;">${escapeHtml(companyName)}<br/>${escapeHtml(tagline)}</p>
+    </td>
+  </tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>
+`;
+}
 
 function escapeHtml(str: string): string {
   return str
