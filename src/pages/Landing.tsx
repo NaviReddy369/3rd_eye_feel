@@ -53,6 +53,13 @@ const Landing: React.FC = () => {
           <p className="text-sm sm:text-base text-tech-text-muted/90 mt-3 max-w-lg mx-auto">
             Select a service to get started. Our team will reach out within 24 hours.
           </p>
+          <button
+            type="button"
+            onClick={() => navigate("/guide")}
+            className="mt-4 text-sm text-tech-cyan hover:text-tech-cyan-dark focus:outline-none focus:ring-2 focus:ring-tech-cyan/50 rounded px-2 py-1"
+          >
+            Want to build it yourself? Get a step-by-step implementation guide →
+          </button>
         </div>
 
         {/* Production Services */}

@@ -1,21 +1,39 @@
 /**
- * Ollama API configuration for the 3rd Eye chatbot.
- * Uses environment variable so you can point to LAN or Tailscale without code changes.
+ * Ollama API configuration for 3rd Eye Feel.
+ * Used by: general Chat and Implementation Guide Chat (qwen2.5:1.5b).
  *
- * Setup: create .env (and .env.local for local overrides) with:
- *   REACT_APP_OLLAMA_BASE_URL=http://192.168.1.254:11434
- * Or via Tailscale:
- *   REACT_APP_OLLAMA_BASE_URL=http://100.115.135.102:11434
+ * Env (in .env or .env.local):
+ *   REACT_APP_OLLAMA_BASE_URL  — e.g. http://100.115.135.102:11434 (Tailscale) or http://192.168.1.254:11434 (LAN)
+ *   REACT_APP_OLLAMA_MODEL     — e.g. qwen2.5:1.5b
+ *   REACT_APP_OLLAMA_API_KEY  — placeholder, e.g. ollama (Ollama ignores it)
  *
- * Ollama does not use real API keys; we send a placeholder for SDK compatibility.
+ * CORS: If the browser blocks requests to Ollama, use a backend proxy or set OLLAMA_ORIGINS on the server.
  */
 
-const baseUrl =
-  process.env.REACT_APP_OLLAMA_BASE_URL?.replace(/\/$/, "") || "http://192.168.1.254:11434";
+const rawBase = process.env.REACT_APP_OLLAMA_BASE_URL || "http://100.115.135.102:11434";
+const baseUrl = rawBase.replace(/\/v1\/?$/, "").replace(/\/$/, "");
+
+export const OLLAMA_CONFIG = {
+  /** Base URL for Ollama API (no trailing slash, no /v1). */
+  baseUrl,
+  /** Chat completions endpoint. */
+  chatUrl: `${baseUrl}/v1/chat/completions`,
+  /** Placeholder API key (Ollama ignores it). */
+  apiKey: process.env.REACT_APP_OLLAMA_API_KEY || "ollama",
+  /** Model used for chat and Implementation Guide (e.g. qwen2.5:1.5b). */
+  model: process.env.REACT_APP_OLLAMA_MODEL || "qwen2.5:1.5b",
+} as const;
+
+/** Alias for config file / SDK usage. */
+export const ollamaConfig = {
+  baseURL: `${OLLAMA_CONFIG.baseUrl}/v1`,
+  apiKey: OLLAMA_CONFIG.apiKey,
+  model: OLLAMA_CONFIG.model,
+};
 
 /**
- * System prompt sent with every chat so the model answers as 3rd Eye Feel.
- * Edit this to train the bot on your business—no model retraining needed.
+ * System prompt for the general Chat (3rd Eye Feel assistant).
+ * For Implementation Guide Chat, a separate prompt + user parameters will be used later.
  */
 export const OLLAMA_SYSTEM_PROMPT = `You are the friendly assistant for 3rd Eye Feel. 3rd Eye Feel is a company that offers "Advanced AI Solutions & Production Services."
 
@@ -29,13 +47,17 @@ If the user asks about pricing or a quote: say we typically respond within 24 ho
 If the user asks something unrelated to 3rd Eye Feel (e.g. generic coding or other topics): briefly answer if it's short, but steer back to how we can help with AI, production, or development.
 Keep replies concise (a few short paragraphs max). Do not invent services we don't offer.`;
 
-export const OLLAMA_CONFIG = {
-  /** Base URL for Ollama API (no trailing slash). */
-  baseUrl,
-  /** Chat completions endpoint. */
-  chatUrl: `${baseUrl}/v1/chat/completions`,
-  /** Placeholder API key (Ollama ignores it). */
-  apiKey: "ollama",
-  /** Default model. */
-  model: process.env.REACT_APP_OLLAMA_MODEL || "tinyllama:latest",
-} as const;
+/**
+ * Implementation Guide: system prompt so the model returns a clear, downloadable guide.
+ */
+export const IMPLEMENTATION_GUIDE_CONFIG = {
+  model: OLLAMA_CONFIG.model,
+  systemPrompt: `You are an expert implementation guide assistant for 3rd Eye Feel. Your job is to write a single, complete implementation guide that a developer or team can follow to build the requested service or feature by themselves.
+
+Rules:
+- Output a clear, step-by-step implementation guide. Use numbered steps and optional sub-steps.
+- Use headings (e.g. ## Section) to structure the guide. Include: Overview, Prerequisites, Steps, and optional Notes/Troubleshooting.
+- Be practical and accurate. Only recommend tools, APIs, or steps you are confident about. Do not invent or guess.
+- Keep the tone professional and concise. The user will use this guide to build the solution on their own.
+- Format for plain text/markdown: use **bold** for important terms, code for commands or code snippets, and clear line breaks.`,
+};

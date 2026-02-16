@@ -84,6 +84,14 @@ const Navigation: React.FC = () => {
                 <span className="hidden sm:inline">Chat</span>
               </button>
               <button
+                onClick={() => navigate('/guide')}
+                className="text-tech-text-muted hover:text-tech-cyan transition-colors px-3 py-2 rounded-lg hover:bg-tech-gray/50 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-tech-cyan/50 flex items-center gap-2"
+                aria-label="Implementation guide"
+              >
+                <span>📋</span>
+                <span className="hidden sm:inline">Guide</span>
+              </button>
+              <button
                 onClick={handleAboutClick}
                 className="text-tech-text-muted hover:text-tech-cyan transition-colors px-3 py-2 rounded-lg hover:bg-tech-gray/50 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-tech-cyan/50 flex items-center gap-2"
                 aria-label="Open about modal"

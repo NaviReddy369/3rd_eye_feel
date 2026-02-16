@@ -1,16 +1,16 @@
 # Ollama Chatbot Setup (3rd Eye Feel)
 
-The 3rd Eye web app includes a **Chat** page that talks to your self-hosted Ollama (e.g. `tinyllama`) over your LAN or Tailscale. No API key is required; Ollama does not use authentication.
+The 3rd Eye web app includes a **Chat** page and (planned) **Implementation Guide Chat** that talk to your self-hosted Ollama over LAN or Tailscale. Default model: **qwen2.5:1.5b**. No real API key is required; Ollama ignores the placeholder.
 
 ---
 
 ## 1. What’s in the app
 
 - **Route:** `/chat` (nav link: **Chat**)
-- **Config:** `src/config/ollama.ts` — base URL and model
+- **Config:** `src/config/ollama.ts` — base URL, model (`qwen2.5:1.5b`), `ollamaConfig` alias, `IMPLEMENTATION_GUIDE_CONFIG` for the Implementation Guide Chat
 - **Service:** `src/services/ollamaService.ts` — calls Ollama `/v1/chat/completions`
 - **Page:** `src/pages/Chatbot.tsx` — message list, input, send, clear, connection status
-- **System prompt:** `src/config/ollama.ts` — `OLLAMA_SYSTEM_PROMPT` (see “Training the bot” below)
+- **System prompt:** `src/config/ollama.ts` — `OLLAMA_SYSTEM_PROMPT` (general chat); `IMPLEMENTATION_GUIDE_CONFIG.systemPrompt` (for implementation guides)
 
 ---
 
@@ -38,20 +38,16 @@ The app uses an **environment variable** so you can switch between LAN and Tails
 Create a `.env` in the project root (and optionally `.env.local` for local overrides):
 
 ```bash
-# LAN (same network as your Ollama server)
-REACT_APP_OLLAMA_BASE_URL=http://192.168.1.254:11434
+# Tailscale (default for remote access)
+REACT_APP_OLLAMA_BASE_URL=http://100.115.135.102:11434
+REACT_APP_OLLAMA_MODEL=qwen2.5:1.5b
+REACT_APP_OLLAMA_API_KEY=ollama
 
-# Or Tailscale (when not on same LAN)
-# REACT_APP_OLLAMA_BASE_URL=http://100.115.135.102:11434
+# Or LAN (same network as your Ollama server)
+# REACT_APP_OLLAMA_BASE_URL=http://192.168.1.254:11434
 ```
 
-Optional: use a different model:
-
-```bash
-REACT_APP_OLLAMA_MODEL=tinyllama:latest
-```
-
-If you don’t set `REACT_APP_OLLAMA_BASE_URL`, it defaults to `http://192.168.1.254:11434`.
+If you don’t set these, defaults are: Tailscale URL above and `qwen2.5:1.5b`.
 
 Restart the dev server after changing env vars:
 
