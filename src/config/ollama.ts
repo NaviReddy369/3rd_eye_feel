@@ -2,12 +2,13 @@
  * Ollama API configuration for 3rd Eye Feel.
  * Used by: general Chat and Implementation Guide Chat (qwen2.5:1.5b).
  *
- * Env (in .env or .env.local):
- *   REACT_APP_OLLAMA_BASE_URL  — e.g. http://100.115.135.102:11434 (Tailscale) or http://192.168.1.254:11434 (LAN)
+ * Env (in .env or .env.local, or Firebase Hosting build env):
+ *   REACT_APP_OLLAMA_BASE_URL  — For LIVE (public) site: use the ollama-proxy URL (e.g. https://your-machine.your-tailnet.ts.net from Tailscale Funnel).
+ *                                For local/Tailscale-only: http://100.115.135.102:11434 or http://192.168.1.254:11434.
  *   REACT_APP_OLLAMA_MODEL     — e.g. qwen2.5:1.5b
- *   REACT_APP_OLLAMA_API_KEY  — placeholder, e.g. ollama (Ollama ignores it)
+ *   REACT_APP_OLLAMA_API_KEY   — optional; proxy can ignore it.
  *
- * CORS: If the browser blocks requests to Ollama, use a backend proxy or set OLLAMA_ORIGINS on the server.
+ * Public live site: run the ollama-proxy on the same PC as Ollama and expose it with Tailscale Funnel; set REACT_APP_OLLAMA_BASE_URL to that HTTPS URL.
  */
 
 const rawBase = process.env.REACT_APP_OLLAMA_BASE_URL || "http://100.115.135.102:11434";

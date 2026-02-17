@@ -207,6 +207,19 @@ Edit `src/config/services.ts` to customize your services:
 4. Build: `npm run build`
 5. Deploy: `firebase deploy --only hosting`
 
+### Live site: public AI (Ollama) API
+
+For the **live Firebase site** to use your Ollama model (chat, implementation guide) for **all visitors**:
+
+1. Run the **ollama-proxy** on the same machine as Ollama and expose it with **Tailscale Funnel**: see [`ollama-proxy/README.md`](ollama-proxy/README.md).
+2. Set the proxy URL for the **Cloud Function** in `functions/.env`:  
+   `OLLAMA_PROXY_URL=https://your-machine.your-tailnet.ts.net`  
+   (The repo includes a default; change it if your Funnel URL is different.)
+3. Deploy functions and hosting:  
+   `firebase deploy --only functions` then `npm run build` and `firebase deploy --only hosting`.
+
+The site uses the `ollamaProxy` Cloud Function (no deprecated `functions.config()`); the function reads `OLLAMA_PROXY_URL` from `functions/.env` at deploy time.
+
 ## Customization
 
 ### Colors & Gradients

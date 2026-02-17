@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendWelcomeEmailOnRequest = void 0;
+exports.ollamaProxy = exports.sendWelcomeEmailOnRequest = void 0;
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const express = require("express");
 const emailConfig_1 = require("./emailConfig");
 admin.initializeApp();
 // Service name lookup for display in email
@@ -184,4 +185,56 @@ function formatTimestamp(ts) {
         minute: "2-digit",
     });
 }
+/**
+ * Ollama proxy base URL (Tailscale Funnel or your ollama-proxy).
+ * Set in functions/.env as OLLAMA_PROXY_URL or it uses this default.
+ */
+function getOllamaProxyBase() {
+    const url = process.env.OLLAMA_PROXY_URL || "https://navig96-ai.taila39f08.ts.net";
+    return (url || "").replace(/\/$/, "");
+}
+const ollamaProxyApp = express();
+ollamaProxyApp.use(express.json({ limit: "1mb" }));
+// CORS on every response
+ollamaProxyApp.use((_req, res, next) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    next();
+});
+ollamaProxyApp.use(async (req, res) => {
+    const method = req.method;
+    // Preflight: always return 204 so browser can send the real request (avoids "preflight doesn't pass")
+    if (method === "OPTIONS") {
+        res.status(204).end();
+        return;
+    }
+    const base = getOllamaProxyBase();
+    if (!base) {
+        res.status(500).json({
+            error: "OLLAMA_PROXY_URL not set",
+            fix: "Add OLLAMA_PROXY_URL=https://navig96-ai.taila39f08.ts.net to functions/.env and redeploy",
+        });
+        return;
+    }
+    const path = (req.url || req.path || "/").replace(/^\/ollamaProxy/, "") || "/";
+    const url = `${base}${path}`;
+    try {
+        const headers = {
+            "Content-Type": req.headers["content-type"] || "application/json",
+        };
+        const opts = { method, headers };
+        if (method === "POST" && req.body !== undefined) {
+            opts.body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+        }
+        const backendRes = await fetch(url, opts);
+        const text = await backendRes.text();
+        res.status(backendRes.status).set("Content-Type", backendRes.headers.get("content-type") || "application/json").send(text);
+    }
+    catch (err) {
+        functions.logger.error("ollamaProxy fetch failed", err);
+        res.status(502).json({ error: "Backend unreachable", detail: String(err) });
+    }
+});
+exports.ollamaProxy = functions.https.onRequest(ollamaProxyApp);
 //# sourceMappingURL=index.js.map
