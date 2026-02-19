@@ -1,168 +1,134 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ServiceCard from "../components/ServiceCard";
 import Button from "../components/Button";
 import { SERVICES } from "../config/services";
 
+type ServiceCategory = "all" | "production" | "development";
+
 const Landing: React.FC = () => {
   const navigate = useNavigate();
+  const [category, setCategory] = useState<ServiceCategory>("all");
 
   const handleServiceClick = (serviceRoute: string) => {
     navigate(serviceRoute);
   };
 
-  const handleGetStarted = () => {
-    navigate("/request");
-  };
-
-  const productionServices = SERVICES.filter((s) => s.category === "production");
-  const developmentServices = SERVICES.filter((s) => s.category === "development");
+  const filteredServices =
+    category === "all"
+      ? SERVICES
+      : SERVICES.filter((s) => s.category === category);
 
   return (
-    <div className="min-h-screen bg-tech-dark relative">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12 relative z-10">
-        {/* Hero: centered glowing eye logo + neon cyan title + taglines (minimal, dark) */}
-        <div className="mb-10 sm:mb-12 md:mb-16 animate-fadeIn text-center">
-          {/* Logo: larger eye with soft cyan glow */}
-          <div className="flex justify-center mb-8 md:mb-10">
-            <img
-              src="/logo.png"
-              alt="3rd Eye Feel"
-              className="h-36 w-36 sm:h-44 sm:w-44 md:h-56 md:w-56 lg:h-64 lg:w-64 object-contain"
-              style={{
-                filter:
-                  "drop-shadow(0 0 16px rgba(0, 217, 255, 0.4)) drop-shadow(0 0 32px rgba(0, 217, 255, 0.2)) brightness(1.05)",
-              }}
-            />
-          </div>
-          {/* Site name: softer cyan, subtle glow */}
-          <h1
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-4 md:mb-5"
-            style={{
-              color: "#5ec8e0",
-              textShadow: "0 0 24px rgba(0, 217, 255, 0.35), 0 0 48px rgba(0, 217, 255, 0.15)",
-            }}
-          >
-            3rd Eye Feel
-          </h1>
-          {/* Tagline */}
-          <p className="text-base sm:text-lg md:text-xl text-tech-text-muted font-normal max-w-xl mx-auto leading-relaxed">
-            Advanced solutions for production and development needs
-          </p>
-          {/* CTA line */}
-          <p className="text-sm sm:text-base text-tech-text-muted/90 mt-3 max-w-lg mx-auto">
-            Select a service to get started. Our team will reach out within 24 hours.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate("/guide")}
-            className="mt-4 text-sm text-tech-cyan hover:text-tech-cyan-dark focus:outline-none focus:ring-2 focus:ring-tech-cyan/50 rounded px-2 py-1"
-          >
-            Want to build it yourself? Get a step-by-step implementation guide →
-          </button>
-        </div>
-
-        {/* Production Services */}
-        <div className="mb-10 sm:mb-12 md:mb-16 animate-fadeIn">
-          <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-6">
-            <div
-              className="h-px flex-1 rounded-full"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.4), transparent)" }}
-            />
-            <h2
-              className="text-xl sm:text-2xl md:text-3xl font-bold whitespace-nowrap"
-              style={{
-                color: "#e5e5e5",
-                textShadow: "0 0 20px rgba(0, 217, 255, 0.2)",
-              }}
-            >
-              Production
-            </h2>
-            <div
-              className="h-px flex-1 rounded-full"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.4), transparent)" }}
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-w-7xl mx-auto">
-            {productionServices.map((service, index) => (
-              <div
-                key={service.id}
-                className="animate-fadeIn"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <ServiceCard
-                  service={service}
-                  onClick={() => handleServiceClick(service.formRoute)}
-                />
+    <div className="min-h-screen bg-tech-dark relative flex flex-col">
+      {/* Compact hero - no long scroll */}
+      <header className="flex-shrink-0 border-b border-white/5 bg-tech-dark/95 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-6 md:py-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <img
+                src="/logo.png"
+                alt="3rd Eye Feel"
+                className="h-14 w-14 md:h-16 md:w-16 object-contain"
+                style={{
+                  filter: "drop-shadow(0 0 12px rgba(0, 217, 255, 0.35))",
+                }}
+              />
+              <div>
+                <h1
+                  className="text-2xl md:text-3xl font-bold tracking-tight"
+                  style={{
+                    color: "#5ec8e0",
+                    textShadow: "0 0 20px rgba(0, 217, 255, 0.2)",
+                  }}
+                >
+                  3rd Eye Feel
+                </h1>
+                <p className="text-sm text-tech-text-muted mt-0.5">
+                  Production & development solutions
+                </p>
               </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate("/guides")}
+                className="border-tech-cyan/40 text-tech-cyan hover:bg-tech-cyan/10"
+              >
+                Implementation Guides
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate("/chat")}
+                className="border-tech-cyan/40 text-tech-cyan hover:bg-tech-cyan/10"
+              >
+                3rd Eye Chat
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => navigate("/enroll")}
+                className="bg-tech-cyan/20 text-tech-cyan border border-tech-cyan/50 hover:bg-tech-cyan/30"
+              >
+                Enroll for guides
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Services dashboard - main content */}
+      <main className="flex-1 container mx-auto px-4 py-6 md:py-8">
+        <section aria-label="Services">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="text-lg font-semibold text-tech-text">
+              Request a service
+            </h2>
+            <div className="flex rounded-lg bg-white/5 p-1 border border-white/10">
+              {(["all", "production", "development"] as const).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  className={`
+                    px-4 py-2 rounded-md text-sm font-medium transition-colors capitalize
+                    ${category === cat ? "bg-tech-cyan/20 text-tech-cyan" : "text-tech-text-muted hover:text-tech-text"}
+                  `}
+                >
+                  {cat === "all" ? "All" : cat}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {filteredServices.map((service) => (
+              <ServiceCard
+                key={service.id}
+                service={service}
+                onClick={() => handleServiceClick(service.formRoute)}
+              />
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Development Services */}
-        <div className="mb-8 sm:mb-10 md:mb-12 animate-fadeIn">
-          <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-6">
-            <div
-              className="h-px flex-1 rounded-full"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.4), transparent)" }}
-            />
-            <h2
-              className="text-xl sm:text-2xl md:text-3xl font-bold whitespace-nowrap"
-              style={{
-                color: "#e5e5e5",
-                textShadow: "0 0 20px rgba(0, 255, 136, 0.2)",
-              }}
-            >
-              Development
-            </h2>
-            <div
-              className="h-px flex-1 rounded-full"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.4), transparent)" }}
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-w-7xl mx-auto">
-            {developmentServices.map((service, index) => (
-              <div
-                key={service.id}
-                className="animate-fadeIn"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <ServiceCard
-                  service={service}
-                  onClick={() => handleServiceClick(service.formRoute)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* General Inquiry CTA - enhanced card */}
-        <div className="text-center mt-10 sm:mt-12 md:mt-16 animate-fadeIn px-4">
-          <div
-            className="rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-10 max-w-xl mx-auto"
-            style={{
-              background: "linear-gradient(145deg, rgba(26, 26, 26, 0.9) 0%, rgba(20, 20, 20, 0.95) 100%)",
-              border: "1px solid rgba(0, 255, 136, 0.2)",
-              boxShadow: "0 0 30px rgba(0, 255, 136, 0.06), inset 0 1px 0 rgba(255,255,255,0.03)",
-            }}
-          >
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-tech-text mb-3">
-              Not sure which service?
-            </h3>
-            <p className="text-tech-text-muted mb-5 sm:mb-6 text-sm sm:text-base leading-relaxed">
-              Use our general inquiry form and we&apos;ll help you find the right solution.
+        {/* General inquiry - compact */}
+        <section className="mt-8 pt-8 border-t border-white/10">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
+            <p className="text-sm text-tech-text-muted">
+              Not sure which service? Use our general inquiry form and we&apos;ll help you find the right solution.
             </p>
             <Button
-              size="md"
-              onClick={handleGetStarted}
+              size="sm"
               variant="outline"
-              className="w-full sm:w-auto min-h-[44px] touch-manipulation border-tech-accent/40 hover:border-tech-accent/70 hover:bg-tech-accent/10"
+              onClick={() => navigate("/request")}
+              className="border-tech-accent/40 text-tech-accent hover:bg-tech-accent/10"
             >
               General Inquiry
             </Button>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 };

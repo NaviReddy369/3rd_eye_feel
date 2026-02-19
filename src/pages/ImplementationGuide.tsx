@@ -7,11 +7,19 @@ import {
 import { GUIDE_SERVICE_OPTIONS, GUIDE_TECH_STACK_OPTIONS } from "../config/guideOptions";
 import Button from "../components/Button";
 
-const ImplementationGuide: React.FC = () => {
+type GuidePhase = "idle" | "searching" | "generating";
+
+interface ImplementationGuideProps {
+  /** When true, render only the form and result (no page title, for embedding in Guides page) */
+  embedded?: boolean;
+}
+
+const ImplementationGuide: React.FC<ImplementationGuideProps> = ({ embedded = false }) => {
   const [serviceType, setServiceType] = useState("");
   const [techStack, setTechStack] = useState("No preference");
   const [additionalContext, setAdditionalContext] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState<GuidePhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [guide, setGuide] = useState<string | null>(null);
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -29,6 +37,8 @@ const ImplementationGuide: React.FC = () => {
     setError(null);
     setGuide(null);
     setLoading(true);
+    setLoadingPhase("searching");
+    const phaseTimer = window.setTimeout(() => setLoadingPhase("generating"), 4000);
     try {
       const params: ImplementationGuideParams = {
         serviceType: serviceType.trim(),
@@ -40,7 +50,9 @@ const ImplementationGuide: React.FC = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate guide");
     } finally {
+      clearTimeout(phaseTimer);
       setLoading(false);
+      setLoadingPhase("idle");
     }
   };
 
@@ -70,23 +82,24 @@ const ImplementationGuide: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-tech-dark">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <div className="text-center mb-8 md:mb-10">
-          <h1
-            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2"
-            style={{
-              color: "#5ec8e0",
-              textShadow: "0 0 24px rgba(0, 217, 255, 0.35)",
-            }}
-          >
-            Implementation Guide
-          </h1>
-          <p className="text-tech-text-muted text-sm sm:text-base max-w-xl mx-auto">
-            Select your service and options below. We&apos;ll generate a step-by-step guide you can use to build it yourself. You can download the guide when done.
-          </p>
-        </div>
+    <div className={embedded ? "" : "min-h-screen bg-tech-dark"}>
+      <div className={embedded ? "max-w-4xl" : "container mx-auto px-4 py-8 max-w-4xl"}>
+        {!embedded && (
+          <div className="text-center mb-8 md:mb-10">
+            <h1
+              className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2"
+              style={{
+                color: "#5ec8e0",
+                textShadow: "0 0 24px rgba(0, 217, 255, 0.35)",
+              }}
+            >
+              Implementation Guide
+            </h1>
+            <p className="text-tech-text-muted text-sm sm:text-base max-w-xl mx-auto">
+              Select your service and options below. We&apos;ll generate a step-by-step guide you can use to build it yourself. Guides can take 1–2 minutes. You can download the guide when done.
+            </p>
+          </div>
+        )}
 
         {/* Status */}
         <div className="flex justify-center gap-4 mb-6">
@@ -170,7 +183,11 @@ const ImplementationGuide: React.FC = () => {
               isLoading={loading}
               className="w-full sm:w-auto min-w-[200px]"
             >
-              {loading ? "Generating…" : "Generate implementation guide"}
+              {loading
+                ? loadingPhase === "searching"
+                  ? "Searching the web…"
+                  : "Generating your guide…"
+                : "Generate implementation guide"}
             </Button>
           </div>
         </form>

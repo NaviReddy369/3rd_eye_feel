@@ -86,10 +86,10 @@ const Chatbot: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold text-tech-text" style={{ background: "linear-gradient(135deg, #0066ff 0%, #00d9ff 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              Chat
+              3rd Eye Chatbot
             </h1>
             <p className="text-sm text-tech-text-muted mt-0.5">
-              Powered by Ollama · {OLLAMA_CONFIG.model}
+              Web application info and enrollment/account help · {OLLAMA_CONFIG.model}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -117,8 +117,8 @@ const Chatbot: React.FC = () => {
         <div className="flex-1 overflow-y-auto rounded-xl border border-tech-border bg-tech-darker/50 p-4 min-h-[320px] max-h-[60vh]">
           {messages.length === 0 && !loading && (
             <div className="h-full flex flex-col items-center justify-center text-center py-8 px-4">
-              <p className="text-tech-text-muted mb-2">Ask anything. Replies come from your Ollama model.</p>
-              <p className="text-tech-text-muted/80 text-sm">Example: &quot;What can you help me with?&quot;</p>
+              <p className="text-tech-text-muted mb-2">Ask about this app, our services, or your enrollment.</p>
+              <p className="text-tech-text-muted/80 text-sm">Example: &quot;What implementation guides do you offer?&quot;</p>
             </div>
           )}
           {messages.map((msg, i) => (

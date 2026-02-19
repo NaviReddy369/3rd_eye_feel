@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Enrollments: anyone can create with email + guideIds + createdAt; no client read
+    match /enrollments/{id} {
+      allow create: if request.resource.data.keys().hasAll(['email', 'guideIds', 'createdAt'])
+        && request.resource.data.email is string
+        && request.resource.data.guideIds is list;
+      allow read, update, delete: if false;
+    }
+    // Mail: only Trigger Email extension / Cloud Functions write; no client access
+    match /mail/{id} {
+      allow read, write: if false;
+    }
+    // Requests: client can create (contact form); no client read/update/delete
+    match /requests/{id} {
+      allow create: if true;
+      allow read, update, delete: if false;
+    }
+  }
+}

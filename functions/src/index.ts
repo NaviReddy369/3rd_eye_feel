@@ -2,6 +2,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as express from "express";
 import { EMAIL_CONFIG } from "./emailConfig";
+import { getGuidesByIds } from "./notionGuides";
 
 admin.initializeApp();
 
@@ -101,6 +102,81 @@ export const sendWelcomeEmailOnRequest = functions.firestore
     functions.logger.info(`Queued welcome email for ${email}`);
   });
 
+/**
+ * When a document is created in "enrollments", resolve guide IDs to titles and
+ * Notion links, then write to "mail" so the Trigger Email extension sends the guide links.
+ * Mail doc format must match Trigger Email extension: to (string or array), message: { subject, text, html }.
+ */
+export const sendEnrollmentEmailOnEnroll = functions.firestore
+  .document("enrollments/{enrollmentId}")
+  .onCreate(async (snap) => {
+    const data = snap.data();
+    functions.logger.info("sendEnrollmentEmailOnEnroll triggered", { hasData: !!data, keys: data ? Object.keys(data) : [] });
+
+    const email = data?.email;
+    const guideIds = Array.isArray(data?.guideIds) ? data.guideIds : [];
+
+    if (!email || typeof email !== "string" || email.trim() === "") {
+      functions.logger.warn("Enrollment document missing valid email, skipping enrollment email");
+      return;
+    }
+    if (guideIds.length === 0) {
+      functions.logger.warn("Enrollment document has no guideIds, skipping enrollment email");
+      return;
+    }
+
+    let guides: { title: string; notionLink: string }[];
+    try {
+      guides = getGuidesByIds(guideIds);
+    } catch (err) {
+      functions.logger.error("getGuidesByIds failed", err);
+      return;
+    }
+    if (guides.length === 0) {
+      functions.logger.warn("No valid guides found for guideIds, skipping enrollment email", { guideIds });
+      return;
+    }
+
+    const { LOGO_URL, COMPANY_NAME, TAGLINE, BRAND_COLORS } = EMAIL_CONFIG;
+    const html = buildEnrollmentEmailHtml({
+      logoUrl: LOGO_URL,
+      companyName: COMPANY_NAME,
+      tagline: TAGLINE,
+      brandColors: BRAND_COLORS,
+      guides,
+    });
+
+    const textLines = [
+      `You're enrolled in the following ${EMAIL_CONFIG.COMPANY_NAME} guides. Open the links below to access them.`,
+      "",
+      ...guides.map((g) => `${g.title}: ${g.notionLink}`),
+      "",
+      `Best regards, The ${EMAIL_CONFIG.COMPANY_NAME} Team`,
+    ];
+    const subject =
+      guides.length === 1
+        ? `Your ${EMAIL_CONFIG.COMPANY_NAME} guide link`
+        : `Your ${EMAIL_CONFIG.COMPANY_NAME} guide links`;
+
+    // Same shape as welcome email so Trigger Email extension picks it up
+    const mailDoc = {
+      to: [email.trim()],
+      message: {
+        subject,
+        text: textLines.join("\n"),
+        html,
+      },
+    };
+
+    try {
+      await admin.firestore().collection("mail").add(mailDoc);
+      functions.logger.info(`Queued enrollment email for ${email} (${guides.length} guide(s))`);
+    } catch (err) {
+      functions.logger.error("Failed to write enrollment mail doc", err);
+      throw err;
+    }
+  });
+
 interface WelcomeEmailParams {
   logoUrl: string;
   companyName: string;
@@ -189,6 +265,80 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
+interface EnrollmentEmailParams {
+  logoUrl: string;
+  companyName: string;
+  tagline: string;
+  brandColors: { primary: string; accent: string; darkBg: string; cardBg: string; text: string; textMuted: string };
+  guides: { title: string; notionLink: string }[];
+}
+
+function buildEnrollmentEmailHtml(params: EnrollmentEmailParams): string {
+  const { logoUrl, companyName, tagline, brandColors, guides } = params;
+  const c = brandColors;
+
+  const guideLinksHtml = guides
+    .map(
+      (g) =>
+        `<tr><td style="padding:12px 0; border-bottom:1px solid #333333;"><a href="${escapeHtml(g.notionLink)}" style="color:${c.accent}; text-decoration:none; font-weight:600;">${escapeHtml(g.title)}</a></td></tr>`
+    )
+    .join("");
+
+  return `
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Your ${escapeHtml(companyName)} guide links</title>
+</head>
+<body style="margin:0; padding:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:${c.darkBg};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${c.darkBg};">
+<tr><td align="center" style="padding:24px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%;" align="center">
+  <tr>
+    <td align="center" style="padding:40px 24px; background-color:${c.darkBg};">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center">
+        <tr><td align="center" style="padding-bottom:20px;">
+          <img src="${logoUrl}" alt="${escapeHtml(companyName)}" width="160" border="0" style="display:block; max-width:160px; width:160px; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; border:0;" />
+        </td></tr>
+        <tr><td align="center">
+          <h1 style="margin:0; font-size:28px; font-weight:700; color:${c.primary}; line-height:1.3;">${escapeHtml(companyName)}</h1>
+        </td></tr>
+        <tr><td align="center" style="padding-top:8px;">
+          <p style="margin:0; font-size:14px; color:${c.textMuted}; line-height:1.5;">${escapeHtml(tagline)}</p>
+        </td></tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:0 24px 32px 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${c.cardBg}; border:1px solid #333333;">
+        <tr><td style="padding:32px 24px;">
+          <h2 style="margin:0 0 20px 0; font-size:22px; font-weight:600; color:${c.text}; line-height:1.4;">You're enrolled</h2>
+          <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6; color:${c.text};">Here are your guide links. Click to open each one in Notion.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            ${guideLinksHtml}
+          </table>
+          <p style="margin:24px 0 0 0; font-size:16px; line-height:1.6; color:${c.text};">Best regards,<br/><strong style="color:${c.accent};">The ${escapeHtml(companyName)} Team</strong></p>
+        </td></tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="padding:24px; background-color:${c.darkBg}; border-top:1px solid #333333;">
+      <p style="margin:0; font-size:12px; color:${c.textMuted}; line-height:1.5;">${escapeHtml(companyName)}<br/>${escapeHtml(tagline)}</p>
+    </td>
+  </tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>
+`;
+}
+
 function formatTimestamp(ts: admin.firestore.Timestamp | admin.firestore.FieldValue): string {
   if (ts && typeof (ts as admin.firestore.Timestamp).toDate === "function") {
     const date = (ts as admin.firestore.Timestamp).toDate();
@@ -237,6 +387,9 @@ ollamaProxyApp.use(async (req, res) => {
 
   const base = getOllamaProxyBase();
   if (!base) {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.status(500).json({
       error: "OLLAMA_PROXY_URL not set",
       fix: "Add OLLAMA_PROXY_URL=https://navig96-ai.taila39f08.ts.net to functions/.env and redeploy",
@@ -247,6 +400,11 @@ ollamaProxyApp.use(async (req, res) => {
   const path = (req.url || req.path || "/").replace(/^\/ollamaProxy/, "") || "/";
   const url = `${base}${path}`;
 
+  const setCors = () => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  };
   try {
     const headers: Record<string, string> = {
       "Content-Type": req.headers["content-type"] || "application/json",
@@ -257,11 +415,16 @@ ollamaProxyApp.use(async (req, res) => {
     }
     const backendRes = await fetch(url, opts);
     const text = await backendRes.text();
+    setCors();
     res.status(backendRes.status).set("Content-Type", backendRes.headers.get("content-type") || "application/json").send(text);
   } catch (err) {
     functions.logger.error("ollamaProxy fetch failed", err);
+    setCors();
     res.status(502).json({ error: "Backend unreachable", detail: String(err) });
   }
 });
 
-export const ollamaProxy = functions.https.onRequest(ollamaProxyApp);
+// Long timeout so Ollama/mistral has time to respond (avoids 408 and gateway response without CORS)
+export const ollamaProxy = functions
+  .runWith({ timeoutSeconds: 300, memory: "256MB" })
+  .https.onRequest(ollamaProxyApp);
